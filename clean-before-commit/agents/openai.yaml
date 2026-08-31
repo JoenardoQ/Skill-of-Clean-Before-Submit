@@ -1,0 +1,4 @@
+interface:
+  display_name: "AAA Clean Before Commit"
+  short_description: "Audit exact Git changes before commit or push"
+  default_prompt: "Use $clean-before-commit to audit the exact staged changes and report blockers before committing."
