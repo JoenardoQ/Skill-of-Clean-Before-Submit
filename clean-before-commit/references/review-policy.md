@@ -38,6 +38,8 @@ previous candidate evidence.
   configuration, tests, or documentation;
 - lockfile, schema, migration, vendored, generated, binary, or large-file
   changes requiring provenance and reproducibility evidence;
+- deletions, renames, symlinks, gitlinks, or file type and mode changes whose
+  scope, target, provenance, or compatibility impact is not established;
 - broad formatting churn, mass rename, or unrelated changes mixed into scope.
 
 ### Intentional
@@ -60,6 +62,9 @@ placeholder or scanner-specific fingerprint suppression only after confirming
 the value is synthetic. Placeholder suppression must match the complete value;
 do not suppress a credential-like value merely because it contains a marker such
 as `example`, `dummy`, or `redacted` as a substring.
+
+Assess a quoted assignment as one complete value, including embedded spaces.
+Malformed or unterminated quoting does not establish that a value is synthetic.
 
 If a credential was committed previously, removing it from the next commit does
 not revoke it or remove prior copies. Stop publication, determine exposure with
