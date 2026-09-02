@@ -42,7 +42,6 @@ The Skill:
 
 ```text
 SKILL_Clean_Before_Commit/
-├── ITERATION_STATE.md
 ├── README.md
 ├── README.zh-CN.md
 ├── evaluation/
@@ -57,8 +56,9 @@ SKILL_Clean_Before_Commit/
     └── scripts/audit_staged.py
 ```
 
-Only `clean-before-commit/` is installed. Tests, evaluation artifacts, the
-release policy, and the iteration record remain outside the runtime bundle.
+Only `clean-before-commit/` is installed. Tests, the evaluation plan, and the
+release policy are maintainer resources outside the runtime bundle. Generated
+evaluation evidence and project-history records are local-only and ignored.
 
 ## Prerequisites
 
@@ -69,16 +69,15 @@ release policy, and the iteration record remain outside the runtime bundle.
 
 ## Installation
 
-From the repository root:
+Ask Codex to download the Skill from GitHub:
 
-```bash
-mkdir -p "$HOME/.agents/skills"
-ln -s "$(pwd)/clean-before-commit" \
-  "$HOME/.agents/skills/clean-before-commit"
+```text
+Use $skill-installer to install
+https://github.com/JoenardoQ/Skill-of-Clean-Before-Submit/tree/main/clean-before-commit
 ```
 
-Resolve an existing destination before replacement. Avoid duplicate source and
-installed copies, then restart Codex if needed.
+Start a new Codex task after installation. Do not link the installed Skill to a
+development checkout; reinstall from GitHub when updating it.
 
 ## Validation
 
@@ -128,7 +127,6 @@ and trust boundaries.
 Pattern scanning can produce false positives and cannot prove the absence of
 secrets, obsolete design, or hidden dynamic consumers. Untracked content is a
 worktree snapshot and can change after inspection; the final Git index must
-still be re-read before commit. The source-linked Skill is installed at its
-renamed location. Automatic routing, entrypoint loading, full behavior
+still be re-read before commit. Automatic routing, entrypoint loading, full behavior
 evaluation, remote readback, and recovery paths remain unverified without
 independent lifecycle evidence.

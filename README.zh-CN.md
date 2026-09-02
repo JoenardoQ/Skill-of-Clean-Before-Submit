@@ -33,7 +33,6 @@ Skill 将：
 
 ```text
 SKILL_Clean_Before_Commit/
-├── ITERATION_STATE.md
 ├── README.md
 ├── README.zh-CN.md
 ├── evaluation/
@@ -48,8 +47,8 @@ SKILL_Clean_Before_Commit/
     └── scripts/audit_staged.py
 ```
 
-只有 `clean-before-commit/` 会被安装；测试、评估材料、发布策略和迭代记录均保留在
-运行时包之外。
+只有 `clean-before-commit/` 会被安装；测试、评估计划和发布策略是运行时包之外的
+维护者资源。生成的评估证据和项目历史记录仅保存在本地，并由 Git 忽略。
 
 ## 前置条件
 
@@ -60,15 +59,15 @@ SKILL_Clean_Before_Commit/
 
 ## 安装
 
-在仓库根目录执行：
+让 Codex 从 GitHub 下载 Skill：
 
-```bash
-mkdir -p "$HOME/.agents/skills"
-ln -s "$(pwd)/clean-before-commit" \
-  "$HOME/.agents/skills/clean-before-commit"
+```text
+使用 $skill-installer 安装
+https://github.com/JoenardoQ/Skill-of-Clean-Before-Submit/tree/main/clean-before-commit
 ```
 
-替换前必须确认已有目标，避免同时存在源码链接和安装副本；必要时重启 Codex。
+安装后新建一个 Codex 任务。不要把已安装 Skill 链接到开发检出目录；需要更新时应从
+GitHub 重新安装。
 
 ## 验证
 
@@ -110,5 +109,5 @@ JSON 转义序列，而不是原始字节；文本输出对路径和诊断信息
 
 模式扫描可能误报，也不能证明不存在密钥、废弃设计或隐藏的动态调用者。未跟踪内容
 只是工作区在扫描时的快照，之后仍可能变化；commit 前仍必须重新读取最终 Git 索引。
-源码链接的 Skill 已安装到重命名后的目录；但在没有独立生命周期证据时，自动路由、
+在没有独立生命周期证据时，自动路由、
 入口加载、完整行为评估、远端回读和恢复路径仍属于未验证项。
