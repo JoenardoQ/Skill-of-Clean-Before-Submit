@@ -1,132 +1,70 @@
 # Clean Before Commit
 
+[简体中文](README.zh-CN.md)
+
 ## Purpose
 
-`clean-before-commit` is a Codex Skill that audits the exact Git change set
-before a commit or push. It identifies secret exposure, production or personal
-data, generated debris, obsolete scaffolding, debug residue, stale fixtures,
-large or unexpected files, unrelated changes, and unnecessary code or
-architecture before they reach repository history or a remote.
+Review the exact Git candidate before commit or push. Detect sensitive content, generated debris, obsolete scaffolding, debug residue, unrelated edits, and unnecessary code or architecture while preserving required behavior.
 
-## Safety boundary
+The skill is a procedure usable by agents with repository access. Its bundled scanner assists with mechanical inspection; it does not decide whether an architecture or deletion is justified.
 
-The Skill is read-only by default. Invocation does not authorize deletion,
-staging, committing, pushing, credential use, or any other external write.
-Before a mutation it resolves the exact repository, paths, diff, target branch,
-and current authority. Ambiguous or pre-existing files are reported for a user
-decision rather than deleted.
+## Use
 
-Secret values are never printed. If a real credential may have entered Git
-history, removing the local file is insufficient: the Skill blocks publication
-and reports that revocation and history remediation require separate decisions.
+Read `clean-before-commit/SKILL.md`, or install the complete `clean-before-commit/` directory through the chosen host's skill mechanism. Optional `agents/openai.yaml` provides Codex interface metadata.
+
+```text
+Use $clean-before-commit to review the staged change. Report findings only.
+```
+
+```text
+Use $clean-before-commit to clean the requested changes, then commit and push
+them to the configured upstream. Preserve unrelated working files.
+```
+
+A review alone is read-only. Existing explicit cleanup, commit, and push authorization remains effective within its scope. Ambiguous ownership, a changed destination, history rewriting, or credential remediation requires a separate decision.
 
 ## Workflow
 
-The Skill:
+1. Identify the repository, intended work, candidate, and authority.
+2. Inspect the index and relevant working files for a commit; inspect outgoing commits for a push.
+3. Run the scanner when available and assess its findings against real consumers and requirements.
+4. Clean only verified, authorized material and run affected checks.
+5. Review the final index, commit if requested, and verify the remote branch after an authorized push.
 
-1. resolves repository root, branch, upstream, worktree state, index state, and
-   the exact staged diff;
-2. inventories staged, unstaged, untracked, ignored, binary, and large files;
-3. runs the bundled read-only scanner to inventory every staged change status
-   and inspect content-bearing staged and untracked entries with bounded reads,
-   without following untracked symlinks or treating scanner output as proof of
-   safety;
-4. classifies blockers, review items, unrelated work, and verified intentional
-   files with evidence and proposed remediation;
-5. performs only authorized cleanup, then runs relevant tests and rebuilds the
-   index with explicit paths; and
-6. re-audits the final staged bytes before any separately authorized commit or
-   push and verifies the requested remote revision after pushing.
+A clean index does not establish that outgoing commits are safe. Content removed in a later commit can still be present in the history being pushed.
 
-## Architecture
+## Scanner
 
-```text
-SKILL_Clean_Before_Commit/
-├── README.md
-├── README.zh-CN.md
-├── evaluation/
-│   └── eval-spec.json
-├── release-policy.json
-├── tests/
-│   └── test_audit_staged.py
-└── clean-before-commit/
-    ├── SKILL.md
-    ├── agents/openai.yaml
-    ├── references/review-policy.md
-    └── scripts/audit_staged.py
+Requires Git and Python 3.10 or later; uses only the Python standard library. From a checkout:
+
+```bash
+python3 clean-before-commit/scripts/audit_staged.py --repo /path/to/repository
+python3 clean-before-commit/scripts/audit_staged.py --repo /path/to/repository --json
 ```
 
-Only `clean-before-commit/` is installed. Tests, the evaluation plan, and the
-release policy are maintainer resources outside the runtime bundle. Generated
-evaluation evidence and project-history records are local-only and ignored.
+Resolve the script relative to the installed skill when running elsewhere. Without Python, use equivalent read-only tools and identify uninspected content.
 
-## Prerequisites
+| Exit code | Meaning |
+| --- | --- |
+| 0 | No scanner findings |
+| 1 | Blocker or review findings require assessment |
+| 2 | Invocation or audit failure |
 
-- Git 2.x with a readable local repository and index.
-- Python 3.10 or later; the scanner uses only the standard library.
-- Codex or another host that can discover Agent Skills for runtime use. Host
-  discovery and behavior still require independent verification.
+The scanner inventories staged changes and untracked files, uses bounded reads, avoids following untracked symlinks, and redacts suspected values. It does not inspect all unstaged content, ignored files, or outgoing history. Review warnings do not automatically block a verified intentional change; unresolved high-impact content does.
 
-## Installation
+JSON includes `repository`, `staged_files`, `staged_changes`, `untracked_files`, `findings`, `summary`, and `limitations`. Paths and diagnostics escape unsafe characters. Pattern scanning can miss secrets or produce false positives.
 
-Ask Codex to download the Skill from GitHub:
+## Maintenance and verification
 
-```text
-Use $skill-installer to install
-https://github.com/JoenardoQ/Skill-of-Clean-Before-Submit/tree/main/clean-before-commit
-```
-
-Start a new Codex task after installation. Do not link the installed Skill to a
-development checkout; reinstall from GitHub when updating it.
-
-## Validation
-
-Run the dependency-free checks from the repository root:
+Run the scanner's existing tests from the repository root:
 
 ```bash
 python3 -B tests/test_audit_staged.py
-python3 "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" \
-  clean-before-commit
+git diff --check
 ```
 
-Maintainers with the Agent Skill Author project can run the release-policy and
-evaluation-spec validators without assuming a particular checkout location:
+Also inspect the skill's links and exercise decisions affected by instruction changes: review-only work, authorized cleanup, intentional scanner findings, and a push with already committed changes.
 
-```bash
-export AGENT_SKILL_AUTHOR_ROOT=/path/to/SKILL_Agent_Skill_Author
-python3 "$AGENT_SKILL_AUTHOR_ROOT/agent-skill-author/scripts/validate_skill.py" \
-  clean-before-commit --policy release-policy.json
-python3 "$AGENT_SKILL_AUTHOR_ROOT/agent-skill-author/scripts/validate_eval_spec.py" \
-  evaluation/eval-spec.json
-```
+Keep the scanner and tests together when changing executable behavior. The runtime directory contains the entrypoint, review policy, scanner, and UI metadata. Development records belong outside the runtime and formal documentation.
 
-The scanner exits `0` when it finds no items, `1` when it emits one or more
-blocker or review findings, and `2` for invalid invocation or an audit/Git
-failure. JSON output retains `repository`, `staged_files`, `untracked_files`,
-`findings`, `summary`, and `limitations`, and adds `staged_changes` with status,
-path, prior path when applicable, and old/new Git modes.
-
-JSON output is valid UTF-8. Filesystem bytes that are not valid UTF-8, along with
-control characters, are emitted as JSON escape sequences instead of raw bytes;
-text output applies the same safety boundary to paths and diagnostics.
-
-## Acceptance and limitations
-
-Acceptance requires deterministic read-only scanning, an inventory of additions,
-Git-reported copies, deletions, modifications, renames, and type changes, bounded
-content reads, non-following treatment of untracked symlinks, redacted diagnostics,
-explicit authority gates, final-index reinspection, passing local tests, and a
-runtime bundle without development debris. Placeholder suppression must match a
-documented synthetic value or environment-variable reference as a complete
-value; a credential-like value is not safe merely because it contains words
-such as `example`, `dummy`, or `redacted`. Quoted assignment values are assessed
-as complete values, including embedded spaces. Tests must trace the scanner's
-blocker, review, clean, and error exits to its material Git-state, file, resource,
-and trust boundaries.
-
-Pattern scanning can produce false positives and cannot prove the absence of
-secrets, obsolete design, or hidden dynamic consumers. Untracked content is a
-worktree snapshot and can change after inspection; the final Git index must
-still be re-read before commit. Automatic routing, entrypoint loading, full behavior
-evaluation, remote readback, and recovery paths remain unverified without
-independent lifecycle evidence.
+Never print suspected secrets. A removed credential may still require revocation and authorized history remediation; neither is implied by a general cleanup request.

@@ -1,90 +1,33 @@
-# Pre-commit Review Policy
+# Review Policy
 
-## Evidence order
+Use while deciding whether candidate content should enter a commit or remote.
 
-Review the exact candidate in this order:
+## Classify findings
 
-1. repository identity, instructions, branch, upstream, and intended scope;
-2. index state and staged bytes;
-3. unstaged and untracked work that may be accidentally included or omitted;
-4. ignore rules and generated boundaries;
-5. tests, static checks, dependency changes, and build reproducibility;
-6. final staged diff immediately before commit;
-7. remote readback after an authorized push.
+| Class | Meaning and action |
+| --- | --- |
+| Blocker | Suspected real secrets or unauthorized sensitive data; unresolved target or outgoing range; material failed checks; unassessed high-impact content. Stop the affected publication until resolved. |
+| Review | Deletions, renames, type changes, generated files, unusual size, obsolete code, or other content needing intent and consumer inspection. Resolve using evidence; this is not an automatic approval request. |
+| Intentional | The user's goal or a verified consumer establishes why the content belongs. Record the reason where it helps review. |
+| Unrelated | Outside the requested change; preserve it and keep it out of this candidate. |
+| Unassessed | Inspection is incomplete or unavailable. Describe the practical gap; high-impact uncertainty blocks publication. |
 
-Re-read state after cleanup because any edit or staging action invalidates the
-previous candidate evidence.
+Presence in the repository does not establish necessity, and a scanner warning does not establish a defect. For a removal, identify what used the resource and whether those consumers remain. For an abstraction, identify the current variations or constraints it serves.
 
-## Finding classes
+Inspect ignored paths when they are relevant to the candidate or would be exposed by an ignore-rule change. Do not recursively read unrelated private files as a precaution.
 
-### Blocker
+## Protect sensitive content
 
-- possible API key, token, password, private key, connection string, or real
-  credential material;
-- personal, customer, confidential, or production data;
-- a material test/build failure attributable to the candidate;
-- an unexpected binary, dump, archive, generated bundle, or large file with no
-  verified consumer;
-- ambiguous repository, branch, remote, staged scope, or publication target;
-- unresolved partial mutation or a staged diff that differs from the reviewed
-  bytes.
+Never print a suspected value. Report the path, rule, and line where safe, plus the remediation needed. Do not include raw secrets in examples, diagnostic output, commit messages, or review records.
 
-### Review
+Treat a quoted credential assignment as a whole value, including spaces. A value is not synthetic merely because it contains words such as `example`, `dummy`, or `redacted`. Exempt only verified complete synthetic values or documented environment-variable references.
 
-- caches, logs, coverage output, temporary files, editor state, generated
-  scaffolding, sample applications, debug statements, stale fixtures, or old
-  snapshots;
-- unused or redundant dependencies, adapters, abstractions, implementations,
-  configuration, tests, or documentation;
-- lockfile, schema, migration, vendored, generated, binary, or large-file
-  changes requiring provenance and reproducibility evidence;
-- deletions, renames, symlinks, gitlinks, or file type and mode changes whose
-  scope, target, provenance, or compatibility impact is not established;
-- broad formatting churn, mass rename, or unrelated changes mixed into scope.
+If sensitive content may already be committed, inspect the relevant outgoing or historical range without reproducing the value. Removing it in the newest tree does not remove it from earlier commits. Credential revocation and history repair are separate actions requiring suitable authority; do not perform them under a general cleanup request.
 
-### Intentional
+## Preserve the review boundary
 
-Mark an item intentional only when the current change contract or an observed
-consumer establishes its need. “It was already present,” “the generator made
-it,” and “tests pass” do not establish necessity.
+Existing explicit authorization remains effective for the resolved action. Reconfirm only when new evidence changes its scope, destination, or consequences.
 
-### Unassessed
+A cleanup request permits removal of verified, in-scope debris; it does not permit deleting ambiguous user material. A commit request does not authorize push, and neither implies force push, history rewriting, credential rotation, or a separate release.
 
-Use this when dynamic discovery, missing tools, inaccessible files, encrypted or
-binary content, incomplete history, or unavailable environment evidence prevents
-a reliable conclusion. Unassessed high-impact content blocks publication.
-
-## Secret handling
-
-Never print a suspected value. Report only severity, rule, path, line when safe,
-and remediation class. Do not add a real secret to an allowlist. Use a documented
-placeholder or scanner-specific fingerprint suppression only after confirming
-the value is synthetic. Placeholder suppression must match the complete value;
-do not suppress a credential-like value merely because it contains a marker such
-as `example`, `dummy`, or `redacted` as a substring.
-
-Assess a quoted assignment as one complete value, including embedded spaces.
-Malformed or unterminated quoting does not establish that a value is synthetic.
-
-If a credential was committed previously, removing it from the next commit does
-not revoke it or remove prior copies. Stop publication, determine exposure with
-read-only history checks, rotate or revoke through the credential owner, and
-rewrite history only with explicit approval and a coordinated recovery plan.
-
-## Cleanup authority
-
-- Read-only inspection may proceed within the repository scope.
-- Editing newly introduced, clearly in-scope content may proceed when the user
-  asked to prepare or clean the change.
-- Deleting ambiguous or pre-existing material requires a concrete decision.
-- Commit requires an explicit commit request.
-- Push requires an explicit push request and a resolved remote/branch target.
-- History rewriting, force push, credential rotation, production-data handling,
-  and public release each require separate authorization.
-
-## Final gate
-
-Do not commit or push until the final staged bytes have been re-inspected, every
-blocker is resolved, review items are intentional or excluded, relevant checks
-pass or their limitations are accepted, and unrelated user work remains outside
-the candidate.
+Before a commit, verify the index still matches the reviewed candidate. Before a push, verify the intended outgoing commits and remote branch. If either changed after review, inspect the change that invalidated the earlier evidence.
